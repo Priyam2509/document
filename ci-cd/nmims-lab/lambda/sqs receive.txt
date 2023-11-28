@@ -1,0 +1,32 @@
+import json
+import boto3
+
+def lambda_handler(event, context):
+    # TODO implemen
+    print(event)
+    data=json.loads(event['Records'][0]['body'])
+    print(data)
+    
+    record_resp=record(data)
+    notify_resp=notify(data)
+        
+def record(data):
+    db=boto3.resource('dynamodb')
+    table=db.Table('s3_text_process')
+    response=table.put_item(
+            Item={
+                'metadata':data['data'],
+                'len':data['keys'],
+                }
+            )
+    return response
+    
+def notify(data):
+    sns= boto3.client('sns')
+    msg=f'A new Json file with data \n {json.loads(data["data"])} \n was uploaded to S3 \n Number of keys are {data["keys"]}'
+    response = sns.publish(
+        TopicArn='arn:aws:sns:ap-south-1:838645531451:s3_text_prc_sns',
+        Message=msg,
+        Subject='S3 Modification Notification',
+    )
+    return response

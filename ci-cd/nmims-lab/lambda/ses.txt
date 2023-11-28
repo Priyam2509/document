@@ -1,0 +1,28 @@
+import json
+import boto3
+
+def lambda_handler(event, context):
+    db=boto3.resource('dynamodb')
+    tbl=db.Table('subscription')
+    # TODO implement
+    payload=json.loads(event['body'])
+    print(payload)
+    if 'email' in payload:
+        id=payload.get('id')
+        mail=payload.get('email')
+        tbl.put_item(
+            Item={
+                'id':id,
+                'mail':mail,
+                }
+            )
+    send_mail(mail)
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Execution completed')
+    }
+
+def send_mail(mail_id):
+    ses=boto3.client('ses')
+    response = ses.verify_email_identity(EmailAddress = mail_id)
+    print(response)

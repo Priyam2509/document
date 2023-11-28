@@ -1,0 +1,33 @@
+import json
+import boto3
+
+def lambda_handler(event, context):
+    s3 = boto3.client('s3')
+    
+    bucket=event['Records'][0]['s3']['bucket']['name']
+    key=event['Records'][0]['s3']['object']['key']
+    
+    data = s3.get_object(Bucket=bucket, Key=key)
+    content=json.loads(data['Body'].read().decode('utf-8'))
+    
+    payload={
+        'data':json.dumps(content),
+        'keys':len(content)
+    }
+    
+    enque_resp=enque(payload)
+    
+    return {
+        'statusCode': 200,
+        'body':{
+            'msg':'execution completed',
+            'response':enque_resp
+        }
+    }
+
+def enque(payload):
+    sqs=boto3.resource('sqs')
+    queue = sqs.get_queue_by_name(QueueName='json_proc')
+    response = queue.send_message(MessageBody=json.dumps(payload))
+    print(response)
+    return response
